@@ -227,6 +227,7 @@ double KPI::calcSI(YUV* yuv) {
 
 double KPI::calcTI() {
 
+	printf("not yet");
 	return 123;
 }
 		
