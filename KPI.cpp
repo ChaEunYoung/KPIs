@@ -12,6 +12,7 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	getVideo.open(fileName, ios::in | ios::binary);
 	if (getVideo.is_open() == false) {
 		printf("file open fail \n");
+		
 	}
 	
 
@@ -28,10 +29,10 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 		getVideo.read((char*)frame[frameNum]->Cr, m_frameSize/4);
 
 
-		calcSI(frame[frameNum]);
+		//calcSI(frame[frameNum]);
 		//frame[frameNum]->ti = calcTI(frame[frameNum]);
-		//frame[frameNum]->constrst = calcContrast(frame[frameNum]);
-		printf("%d th constatst: %.4f\n", frameNum, frame[frameNum]->stdev);
+		frame[frameNum]->constrst = calcContrast(frame[frameNum]);
+		printf("%d th stdev: %.4f\n", frameNum, frame[frameNum]->sobelStdev);
 		//Sleep(30);
 		//deleteYUV(frame);
 	}
@@ -45,7 +46,7 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	
 }
 
-void KPI::sobelFilter(unsigned char* block, int block_x, int block_y) {
+void KPI::sobelFilter(unsigned char* block, int block_x, int block_y, int option) {
 	int mb_x = block_x; int mb_y = block_y;
 	int blockSize = mb_x * mb_y;
 	unsigned char* Gx = new unsigned char[blockSize]; memset(Gx, 0, blockSize);
@@ -84,30 +85,86 @@ void KPI::sobelFilter(unsigned char* block, int block_x, int block_y) {
 
 	}
 	*/
+	if (option == 0) {
+		for (int y = 0; y < mb_y; y++) {
+			for (int x = 0; x < mb_x; x++) {
+				double tempGx = 0;
+				double tempGy = 0;
+				if ((x > 0 && x < mb_x - 1) && (y > 0 && y < mb_y - 1)) {
 
-	for (int y = 0; y < mb_y; y++) {
-		for (int x = 0; x < mb_x; x++) {
-			double tempGx = 0;
-			double tempGy = 0;
-			if ((x > 0 && x < mb_x - 1) && (y > 0 && y < mb_y - 1)) {
-
-				for (int i = 0; i < 3; i++) {
-					for (int j = 0; j < 3; j++) {
-						tempGx += Sx[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
-						tempGy += Sy[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+					for (int i = 0; i < 3; i++) {
+						for (int j = 0; j < 3; j++) {
+							tempGx += Sx[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+							tempGy += Sy[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+						}
 					}
 				}
+				else {
+					sobel[y * mb_x + x] = 0;
+				}
+				G = sqrt(tempGx * tempGx + tempGy * tempGy);
+				sobel[y * mb_x + x] = G;
+				mean += G;
 			}
-			else {
-				sobel[y * mb_x + x] = 0;
-			}
-			G = sqrt(tempGx * tempGx + tempGy * tempGy);
-			sobel[y * mb_x + x] = G;
-			mean += G;
 		}
 	}
 
-	//for thin edge
+	else if (option == 1) {
+		for (int y = 0; y < mb_y; y++) {
+			for (int x = 0; x < mb_x; x++) {
+				double tempGx = 0;
+				//double tempGy = 0;
+				if ((x > 0 && x < mb_x - 1) && (y > 0 && y < mb_y - 1)) {
+
+					for (int i = 0; i < 3; i++) {
+						for (int j = 0; j < 3; j++) {
+							tempGx += Sx[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+							//tempGy += Sy[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+						}
+					}
+				}
+				else {
+					sobel[y * mb_x + x] = 0;
+				}
+				G = abs(tempGx);//sqrt(tempGx * tempGx + tempGy * tempGy);
+				sobel[y * mb_x + x] = G;
+				mean += G;
+			}
+		}
+	}
+
+	else if (option == 2) {
+		for (int y = 0; y < mb_y; y++) {
+			for (int x = 0; x < mb_x; x++) {
+				//double tempGx = 0;
+				double tempGy = 0;
+				if ((x > 0 && x < mb_x - 1) && (y > 0 && y < mb_y - 1)) {
+
+					for (int i = 0; i < 3; i++) {
+						for (int j = 0; j < 3; j++) {
+							//tempGx += Sx[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+							tempGy += Sy[i * 3 + j] * block[(y - 1 + i) * mb_x + (x - 1 + j)];
+						}
+					}
+				}
+				else {
+					sobel[y * mb_x + x] = 0;
+				}
+				G = abs(tempGy);//sqrt(tempGx * tempGx + tempGy * tempGy);
+				sobel[y * mb_x + x] = G;
+				mean += G;
+			}
+		}
+	}
+
+	else {
+		printf("sobel option is not in range\n");
+	}
+	
+	
+
+	//for thin edge. not used
+	/*
 	double min = 1000000;
 	double max = -10000000;
 	for (int y = 0; y < mb_y; y++) {
@@ -124,6 +181,7 @@ void KPI::sobelFilter(unsigned char* block, int block_x, int block_y) {
 
 	mean = mean / blockSize;
 	threshold = alpha * sqrt(mean);
+	*/
 
 
 	for (int y = 0; y < mb_y; y++) {
@@ -157,9 +215,9 @@ double KPI::calcContrast(YUV* yuv) {
 	unsigned char* tempBlock = new unsigned char[MB_SIZE * MB_SIZE];
 	unsigned char* sobel = new unsigned char[m_frameSize];
 	memcpy(image, yuv->Y, m_frameSize);
-	yuv->stdev = calcStdev(image, m_width, m_height);
-	cout << yuv->stdev << "  ";
-	sobelFilter(image, m_width, m_height);
+	//yuv->stdev = calcStdev(image, m_width, m_height);
+	//cout << yuv->stdev << "  ";
+	sobelFilter(image, m_width, m_height,1);
 
 	for (int mbIdx_y = 0, yy = 0; mbIdx_y < m_height; mbIdx_y += MB_SIZE, yy++) {
 		if (mbExtra_y != 0 && yy == mbNum_y) { block_y = mbExtra_y; }
@@ -171,7 +229,7 @@ double KPI::calcContrast(YUV* yuv) {
 
 			//printf("block_x: %d, block_y: %d \n", block_x, block_y);
 			mbDivider(image, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y, m_width);
-			
+			checkEdge(tempBlock, block_x, block_y);
 			
 			//blockcpy(imageGray, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y,width);
 			//printf("[(%d,%d),(%d,%d)] ", mbIdx_x, mbIdx_y, block_x, block_y);
@@ -180,7 +238,7 @@ double KPI::calcContrast(YUV* yuv) {
 	}
 
 	ofstream outYUV;
-	outYUV.open("sobel.Y", ios::app|ios::out|ios::binary);
+	outYUV.open("sobel_x.Y", ios::app|ios::out|ios::binary);
 	outYUV.seekp(0,ios::end);
 	outYUV.write((char*)image, m_frameSize);
 	//outYUV.write((char*)image, width * height);
@@ -193,6 +251,16 @@ double KPI::calcContrast(YUV* yuv) {
 
 
 	return contrast;
+}
+
+int KPI::checkEdge(unsigned char* block, int block_x, int block_y) {
+	int edgeCount = 0;
+	for (int i = 0; i < block_x * block_y; i++) {
+		if (block[i] > 0) {
+			edgeCount++;
+		}
+	}
+	return edgeCount;
 }
 
 double KPI::calcStdev(unsigned char* image, int width, int height) { // using for Spatial information
@@ -214,7 +282,7 @@ double KPI::calcStdev(unsigned char* image, int width, int height) { // using fo
 double KPI::calcSI(YUV* yuv) {
 	unsigned char* image = new unsigned char[m_frameSize];
 	memcpy(image, yuv->Y, m_frameSize);
-	sobelFilter(image, m_width, m_height);
+	sobelFilter(image, m_width, m_height,1);
 	
 	yuv->sobelStdev = calcStdev(image, m_width, m_height);
 
@@ -231,8 +299,6 @@ double KPI::calcTI() {
 	return 123;
 }
 		
-
-
 
 void KPI::mbDivider(unsigned char* image, unsigned char* block, int block_x, int block_y, int mb_x, int mb_y, int w) {
 
@@ -257,6 +323,7 @@ void KPI::setYUVInfo() {
 		frame[i]->constrst = 0;
 		frame[i]->stdev = 0;
 		frame[i]->sobelStdev = 0;
+		frame[i]->edgeCount = 0;
 		frame[i]->si = 0;
 		frame[i]->ti = 0;
 	}

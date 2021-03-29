@@ -21,6 +21,8 @@ struct YUV {
 	double constrst;
 	double stdev;
 	double sobelStdev;
+	int edgeCount;
+
 	double si;
 	double ti;
 };
@@ -31,11 +33,13 @@ public:
 	KPI();
 	KPI(char* fileName, int width, int height, int num_frame);
 	void setYUVInfo();
+	void deleteYUV();
 	void mbDivider(unsigned char* image, unsigned char* block, int x, int y, int xx, int yy, int);
 	//void blockcpy(unsigned char* image, unsigned char* block, int block_x, int block_y, int mb_x, int mb_y, int);
 	//void saveImage(YUV* yuv);
-	void sobelFilter(unsigned char* block, int block_x, int block_y);
-	void deleteYUV();
+	void sobelFilter(unsigned char* block, int block_x, int block_y, int option);
+	int checkEdge(unsigned char* block, int block_x, int block_y);
+	
 	double calcContrast(YUV* yuv);
 	double calcStdev(unsigned char* image, int width, int height);
 	double calcSI(YUV* yuv);
