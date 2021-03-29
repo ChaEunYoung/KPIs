@@ -8,6 +8,8 @@ KPI::KPI()
 
 KPI::KPI(char* fileName, int width, int height, int num_frame)
 {	
+	double sumTempStdev = 0;
+
 	ifstream getVideo;
 	getVideo.open(fileName, ios::in | ios::binary);
 	if (getVideo.is_open() == false) {
@@ -28,22 +30,32 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 		getVideo.read((char*)frame[frameNum]->Cb, m_frameSize/4);
 		getVideo.read((char*)frame[frameNum]->Cr, m_frameSize/4);
 
+		//Si
+		calcSI(frame[frameNum]);
+		spatialInformation += frame[frameNum]->sobelStdev;
+		
 
-		//calcSI(frame[frameNum]);
-		//frame[frameNum]->ti = calcTI(frame[frameNum]);
-		frame[frameNum]->constrst = calcContrast(frame[frameNum]);
-		printf("%d th stdev: %.4f\n", frameNum, frame[frameNum]->sobelStdev);
-		//Sleep(30);
+		//Contrast
+		//frame[frameNum]->constrst = calcContrast(frame[frameNum]);
+		//printf("%d th stdev: %.4f\n", frameNum, frame[frameNum]->sobelStdev);
+
+		//TI
+		if (frameNum > 0) {
+			double tempStdev = 0;
+			tempStdev = calcTI(frame[frameNum - 1], frame[frameNum], motionDiff[frameNum]);
+			sumTempStdev += tempStdev;
+		}
+
+		printf("%dth frame done.\n", frameNum);
 		//deleteYUV(frame);
 	}
 
-	for (int i = 0; i < m_numOfFrame; i++) {
-		spatialInformation += frame[i]->stdev;
-	}
-
 	spatialInformation = spatialInformation / m_numOfFrame;
-	printf("spatialInformation: %.4f\n", spatialInformation);
-	
+	temporalInformation = sumTempStdev / (m_numOfFrame - 1);
+	printf("----------------------------------------------\n");
+	printf("Temporal Information: %0.4f\n", temporalInformation);
+	printf("Spatial Information: %.4f\n", spatialInformation);
+	printf("----------------------------------------------\n");
 }
 
 void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x, int block_y, int option) {
@@ -308,12 +320,17 @@ double KPI::calcSI(YUV* yuv) {
 	return a;
 }
 
-double KPI::calcTI() {
+double KPI::calcTI(YUV* yuvBefore, YUV* yuvTemp, YUV*diff) {
 
-	printf("not yet");
-	return 123;
+	for (int i = 0; i < m_frameSize; i++) {
+		diff->Y[i] = yuvTemp->Y[i] - yuvBefore->Y[i];
+	}
+	diff->stdev = calcStdev(diff->Y, m_width, m_height);
+
+	return diff->stdev;
 }
-		
+
+	
 
 void KPI::mbDivider(unsigned char* image, unsigned char* block, int block_x, int block_y, int mb_x, int mb_y, int w) {
 
@@ -328,6 +345,7 @@ void KPI::mbDivider(unsigned char* image, unsigned char* block, int block_x, int
 
 void KPI::setYUVInfo() {
 	frame = new YUV*[m_numOfFrame];
+	motionDiff = new YUV*[m_numOfFrame];
 	for (int i = 0; i < m_numOfFrame; i++) {
 		frame[i] = new YUV;
 		frame[i]->Y = new unsigned char[m_frameSize];
@@ -341,6 +359,17 @@ void KPI::setYUVInfo() {
 		frame[i]->edgeCount = 0;
 		frame[i]->si = 0;
 		frame[i]->ti = 0;
+
+		motionDiff[i] = new YUV;
+		motionDiff[i]->Y = new unsigned char[m_frameSize];
+		motionDiff[i]->width = m_width;
+		motionDiff[i]->height = m_height;
+		motionDiff[i]->constrst = 0;
+		motionDiff[i]->stdev = 0;
+		motionDiff[i]->sobelStdev = 0;
+		motionDiff[i]->edgeCount = 0;
+		motionDiff[i]->si = 0;
+		motionDiff[i]->ti = 0;
 	}
 	printf("set info\n");
 }

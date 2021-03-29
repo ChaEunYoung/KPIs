@@ -43,8 +43,9 @@ public:
 	double calcContrast(YUV* yuv);
 	double calcStdev(unsigned char* image, int width, int height);
 	double calcSI(YUV* yuv);
-	double calcTI();
+	double calcTI(YUV* yuvBefore, YUV* yuvTemp, YUV*diff);
 	YUV** frame;
+	YUV** motionDiff;
 
 
 
@@ -52,7 +53,7 @@ public:
 	double contrast = 0;
 	double colorfulness = 0;
 	double spatialInformation = 0;
-	double tempolarInformation = 0;
+	double temporalInformation = 0;
 	double vniqe = 0;
 
 	int m_width = 0;
