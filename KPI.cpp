@@ -12,7 +12,7 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	getVideo.open(fileName, ios::in | ios::binary);
 	if (getVideo.is_open() == false) {
 		printf("file open fail \n");
-		
+		return;
 	}
 	
 
@@ -46,7 +46,7 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	
 }
 
-void KPI::sobelFilter(unsigned char* block, int block_x, int block_y, int option) {
+void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x, int block_y, int option) {
 	int mb_x = block_x; int mb_y = block_y;
 	int blockSize = mb_x * mb_y;
 	unsigned char* Gx = new unsigned char[blockSize]; memset(Gx, 0, blockSize);
@@ -164,7 +164,7 @@ void KPI::sobelFilter(unsigned char* block, int block_x, int block_y, int option
 	
 
 	//for thin edge. not used
-	/*
+	
 	double min = 1000000;
 	double max = -10000000;
 	for (int y = 0; y < mb_y; y++) {
@@ -178,16 +178,19 @@ void KPI::sobelFilter(unsigned char* block, int block_x, int block_y, int option
 		}
 	}
 	double abc = (255. / (max - min));
+	
+
 
 	mean = mean / blockSize;
 	threshold = alpha * sqrt(mean);
-	*/
+	
 
 
 	for (int y = 0; y < mb_y; y++) {
 		for (int x = 0; x < mb_x; x++) {
 			//block[y * mb_x + x] = sobel[y * mb_x + x] * abc;
-			block[y * mb_x + x] = (sobel[y * mb_x + x] > mean) ? 255 : 0;
+			//sobelOut[y * mb_x + x] = (sobel[y * mb_x + x] > mean) ? 255 : 0;
+			sobelOut[y * mb_x + x] = (sobel[y * mb_x + x]*abc);
 
 		}
 	}
@@ -217,7 +220,7 @@ double KPI::calcContrast(YUV* yuv) {
 	memcpy(image, yuv->Y, m_frameSize);
 	//yuv->stdev = calcStdev(image, m_width, m_height);
 	//cout << yuv->stdev << "  ";
-	sobelFilter(image, m_width, m_height,1);
+	sobelFilter(image, sobel, m_width, m_height, 2);
 
 	for (int mbIdx_y = 0, yy = 0; mbIdx_y < m_height; mbIdx_y += MB_SIZE, yy++) {
 		if (mbExtra_y != 0 && yy == mbNum_y) { block_y = mbExtra_y; }
@@ -228,19 +231,30 @@ double KPI::calcContrast(YUV* yuv) {
 			else { block_x = MB_SIZE; }
 
 			//printf("block_x: %d, block_y: %d \n", block_x, block_y);
-			mbDivider(image, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y, m_width);
-			checkEdge(tempBlock, block_x, block_y);
+			/*
+			mbDivider(sobel, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y, m_width);
+			int edge = checkEdge(tempBlock, block_x, block_y);
+			//cout << (float)edge/(block_x*block_y) << "  ";
+			if ((float)edge/(block_x*block_y) > 0.2) {
+				cout << (float)edge / (block_x*block_y) << endl;
+			}
+			else {
+				cout << "edge less than threshold " << endl;
+			}
+			*/
 			
 			//blockcpy(imageGray, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y,width);
 			//printf("[(%d,%d),(%d,%d)] ", mbIdx_x, mbIdx_y, block_x, block_y);
+
+			memset(tempBlock, 0, block_x* block_y);
 		}
 		//cout << endl;
 	}
 
 	ofstream outYUV;
-	outYUV.open("sobel_x.Y", ios::app|ios::out|ios::binary);
+	outYUV.open("sobel_y2.Y", ios::app|ios::out|ios::binary);
 	outYUV.seekp(0,ios::end);
-	outYUV.write((char*)image, m_frameSize);
+	outYUV.write((char*)sobel, m_frameSize);
 	//outYUV.write((char*)image, width * height);
 	//outYUV.write((char*)image, width * height);
 
@@ -256,7 +270,8 @@ double KPI::calcContrast(YUV* yuv) {
 int KPI::checkEdge(unsigned char* block, int block_x, int block_y) {
 	int edgeCount = 0;
 	for (int i = 0; i < block_x * block_y; i++) {
-		if (block[i] > 0) {
+		int ss = static_cast<int>(block[i]);
+		if (ss > 0) {
 			edgeCount++;
 		}
 	}
@@ -282,7 +297,7 @@ double KPI::calcStdev(unsigned char* image, int width, int height) { // using fo
 double KPI::calcSI(YUV* yuv) {
 	unsigned char* image = new unsigned char[m_frameSize];
 	memcpy(image, yuv->Y, m_frameSize);
-	sobelFilter(image, m_width, m_height,1);
+	sobelFilter(yuv->Y, image, m_width, m_height,1);
 	
 	yuv->sobelStdev = calcStdev(image, m_width, m_height);
 

@@ -37,7 +37,7 @@ public:
 	void mbDivider(unsigned char* image, unsigned char* block, int x, int y, int xx, int yy, int);
 	//void blockcpy(unsigned char* image, unsigned char* block, int block_x, int block_y, int mb_x, int mb_y, int);
 	//void saveImage(YUV* yuv);
-	void sobelFilter(unsigned char* block, int block_x, int block_y, int option);
+	void sobelFilter(unsigned char* block, unsigned char* sobelOut, int block_x, int block_y, int option);
 	int checkEdge(unsigned char* block, int block_x, int block_y);
 	
 	double calcContrast(YUV* yuv);
