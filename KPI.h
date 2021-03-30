@@ -8,6 +8,7 @@
 #define HEADER_SIZE 54
 #define NUM_FRAME 200
 #define MB_SIZE 64
+#define CLIP(x) (x < 0 ? 0 : (x > 255 ? 255 : x))
 
 
 using namespace std;
@@ -16,6 +17,7 @@ struct YUV {
 	unsigned char* Y;
 	unsigned char* Cb;
 	unsigned char* Cr;
+	
 	int width;
 	int height;
 	double constrst;
@@ -40,12 +42,17 @@ public:
 	void sobelFilter(unsigned char* block, unsigned char* sobelOut, int block_x, int block_y, int option);
 	int checkEdge(unsigned char* block, int block_x, int block_y);
 	
-	double calcContrast(YUV* yuv);
+	double calcBlur(YUV* yuv);
+	double calcColor(unsigned char* rgb);
 	double calcStdev(unsigned char* image, int width, int height);
+	double calcStdev2(double* image, int width, int height, double& valOut, double& meanOut);
 	double calcSI(YUV* yuv);
 	double calcTI(YUV* yuvBefore, YUV* yuvTemp, YUV*diff);
+	void YUV420toRGB(YUV* yuv, unsigned char* rgb, int width, int height);
 	YUV** frame;
 	YUV** motionDiff;
+
+	unsigned char* RGB;
 
 
 
