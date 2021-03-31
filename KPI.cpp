@@ -12,8 +12,6 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	double sumTempCont = 0;
 	double sumTempColor = 0;
 	
-	
-
 	ifstream getVideo;
 	getVideo.open(fileName, ios::in | ios::binary);
 	if (getVideo.is_open() == false) {
@@ -36,6 +34,7 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 		getVideo.read((char*)frame[frameNum]->Y,m_frameSize);
 		getVideo.read((char*)frame[frameNum]->Cb, m_frameSize/4);
 		getVideo.read((char*)frame[frameNum]->Cr, m_frameSize/4);
+
 		//**TI**
 		if (frameNum > 0) {
 			double tempTi = 0;
@@ -43,31 +42,39 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 			sumTempTi += tempTi;
 		}
 
-		//**Si**
+
+
+		//***********Si***********
 		calcSI(frame[frameNum]);
 		spatialInformation += frame[frameNum]->sobelStdev;
 		//printf("%.4f spatialInformation.\n", frame[frameNum]->sobelStdev);
 
-		//**Colorfulness**
+
+
+		//***********Colorfulness***********
 		YUV420toRGB(frame[frameNum], RGB, m_width, m_height);
 		double tempcolor = calcColor(RGB);
 		sumTempColor += tempcolor;
 		//printf("%.4f color.\n", tempcolor);
-		//ofstream outYUV;
-		//outYUV.open("RGB2_1.RGB", ios::app | ios::out | ios::binary);
-		//outYUV.seekp(0, ios::end);
-		//outYUV.write((char*)RGB, m_frameSize*3);
-		//outYUV.close();
-		//outYUV.write((char*)image, width * height);
-		//outYUV.write((char*)image, width * height);
+		ofstream outYUV;
+		outYUV.open("RGB2_1.RGB", ios::app | ios::out | ios::binary);
+		outYUV.seekp(0, ios::end);
+		outYUV.write((char*)RGB, m_frameSize*3);
+		outYUV.close();
 		memset(RGB, 0, m_frameSize * 3);
 
-		//**Constast**
+
+
+		//***********Constast***********
 		double tempCont = calcStdev(frame[frameNum]->Y, m_width, m_height);
 		sumTempCont += tempCont;
 
-		//**Blur**
-		//calcblur(frame[frameNum]);
+
+
+		//***********Blur***********
+		//calcBlur(frame[frameNum]);
+
+
 		
 		
 		printf("%dth frame done.\n", frameNum);
@@ -83,7 +90,7 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	printf("----------------------------------------------\n");
 	printf("Temporal Information: %0.4f\n", temporalInformation);
 	printf("Spatial Information: %.4f\n", spatialInformation);
-	printf("colorfulness: %.4f\n", colorfulness);
+	printf("Colorfulness: %.4f\n", colorfulness);
 	printf("Contrast: %.4f\n", contrast);
 	printf("----------------------------------------------\n");
 }
@@ -203,10 +210,6 @@ void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x
 		printf("sobel option is not in range\n");
 	}
 	
-	
-
-	//for thin edge. not used
-	
 	double min = 1000000;
 	double max = -10000000;
 	for (int y = 0; y < mb_y; y++) {
@@ -232,7 +235,7 @@ void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x
 		for (int x = 0; x < mb_x; x++) {
 			//block[y * mb_x + x] = sobel[y * mb_x + x] * abc;
 			sobelOut[y * mb_x + x] = (sobel[y * mb_x + x] > threshold) ? 255 : 0;
-			//sobelOut[y * mb_x + x] = (sobel[y * mb_x + x]);
+			//sobelOut[y * mb_x + x] = (sobel[y * mb_x + x]*abc);
 
 		}
 	}
@@ -253,7 +256,6 @@ double KPI::calcBlur(YUV* yuv) {
 	int block_y = 0;
 	float tempClontrast = 0;
 	float contrast = 0;
-
 
 	unsigned char* image = new unsigned char[m_frameSize];
 	unsigned char* imageGray = new unsigned char[m_frameSize];
@@ -372,7 +374,7 @@ double KPI::calcStdev(unsigned char* image, int width, int height) { // using fo
 	return sqrt(stdev / imageSize);
 }
 
-double KPI::calcStdev2(double* image, int width, int height, double& varOut, double& meanOut) { // using for Spatial information
+double KPI::calcStdev2(double* image, int width, int height, double& varOut, double& meanOut) { // using for temporal information
 	double stdev = 0;
 	double mean = 0;
 	int imageSize = width * height;
@@ -392,8 +394,15 @@ double KPI::calcStdev2(double* image, int width, int height, double& varOut, dou
 
 double KPI::calcSI(YUV* yuv) {
 	unsigned char* image = new unsigned char[m_frameSize];
-	memcpy(image, yuv->Y, m_frameSize);
+	//memcpy(image, yuv->Y, m_frameSize);
 	sobelFilter(yuv->Y, image, m_width, m_height,0);
+
+	ofstream outYUV;
+	outYUV.open("sobel_xy.Y", ios::app | ios::out | ios::binary);
+	outYUV.seekp(0, ios::end);
+	outYUV.write((char*)image, m_frameSize);
+	//outYUV.write((char*)image, width * height);
+	//outYUV.write((char*)image, width * height);
 	
 	yuv->sobelStdev = calcStdev(image, m_width, m_height);
 
