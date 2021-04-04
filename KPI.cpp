@@ -30,12 +30,14 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 	//set memory
 	setYUVInfo();
 	RGB = new unsigned char[m_frameSize * 3];
+	//marzilianoWidths = new unsigned char[m_frameSize];
 
 
 	for (int frameNum = 0; frameNum < m_numOfFrame; frameNum++) {
 		getVideo.read((char*)frame[frameNum]->Y,m_frameSize);
 		getVideo.read((char*)frame[frameNum]->Cb, m_frameSize/4);
 		getVideo.read((char*)frame[frameNum]->Cr, m_frameSize/4);
+		/*
 		//**TI**
 		if (frameNum > 0) {
 			double tempTi = 0;
@@ -47,8 +49,10 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 		calcSI(frame[frameNum]);
 		spatialInformation += frame[frameNum]->sobelStdev;
 		//printf("%.4f spatialInformation.\n", frame[frameNum]->sobelStdev);
+		*/
 
 		//**Colorfulness**
+		/*
 		YUV420toRGB(frame[frameNum], RGB, m_width, m_height);
 		double tempcolor = calcColor(RGB);
 		sumTempColor += tempcolor;
@@ -61,17 +65,23 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 		//outYUV.write((char*)image, width * height);
 		//outYUV.write((char*)image, width * height);
 		memset(RGB, 0, m_frameSize * 3);
+		*/
 
 		//**Constast**
-		double tempCont = calcStdev(frame[frameNum]->Y, m_width, m_height);
-		sumTempCont += tempCont;
+		//double tempCont = calcStdev(frame[frameNum]->Y, m_width, m_height);
+		//sumTempCont += tempCont;
 
 		//**Blur**
-		//calcblur(frame[frameNum]);
+		calcblur(frame[frameNum]);
+		count++;
 		
 		
 		printf("%dth frame done.\n", frameNum);
 		//deleteYUV(frame);
+
+		//saveImage(frame[frameNum]->Y, m_width, m_height, frameNum);
+		
+		
 	}
 
 
@@ -219,7 +229,7 @@ void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x
 			}
 		}
 	}
-	double abc = (255. / (max - min));
+	double normalizer = (255. / (max - min));
 	
 
 
@@ -231,8 +241,10 @@ void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x
 	for (int y = 0; y < mb_y; y++) {
 		for (int x = 0; x < mb_x; x++) {
 			//block[y * mb_x + x] = sobel[y * mb_x + x] * abc;
-			sobelOut[y * mb_x + x] = (sobel[y * mb_x + x] > threshold) ? 255 : 0;
-			//sobelOut[y * mb_x + x] = (sobel[y * mb_x + x]);
+			//sobelOut[y * mb_x + x] = (sobel[y * mb_x + x] > threshold) ? 255 : 0;
+
+			//sobelOut[y * mb_x + x] = (sobel[y * mb_x + x]*abc);
+			sobelOut[y * mb_x + x] = (sobel[y * mb_x + x] > threshold)?(sobel[y * mb_x + x] * normalizer) : 0;
 
 		}
 	}
@@ -243,7 +255,7 @@ void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x
 	delete sobel;
 }
 
-double KPI::calcBlur(YUV* yuv) {
+double KPI::calcblur(YUV* yuv) {
 	int mbNum_x = m_width / MB_SIZE; // 960/64 = 15
 	int mbExtra_x = m_width % MB_SIZE;
 	int mbNum_y = m_height / MB_SIZE; // 540/64 = 8...
@@ -259,11 +271,15 @@ double KPI::calcBlur(YUV* yuv) {
 	unsigned char* imageGray = new unsigned char[m_frameSize];
 	unsigned char* tempBlock = new unsigned char[MB_SIZE * MB_SIZE];
 	unsigned char* sobel = new unsigned char[m_frameSize];
+	unsigned char* marzilianoWidths = new unsigned char[m_frameSize];
 	memcpy(image, yuv->Y, m_frameSize);
 	//yuv->stdev = calcStdev(image, m_width, m_height);
 	//cout << yuv->stdev << "  ";
-	sobelFilter(image, sobel, m_width, m_height, 2);
+	sobelFilter(image, sobel, m_width, m_height, 1);
+	calcEdgeWidth(sobel, image, marzilianoWidths);
 
+
+	/*
 	for (int mbIdx_y = 0, yy = 0; mbIdx_y < m_height; mbIdx_y += MB_SIZE, yy++) {
 		if (mbExtra_y != 0 && yy == mbNum_y) { block_y = mbExtra_y; }
 		else { block_y = MB_SIZE; }
@@ -273,30 +289,35 @@ double KPI::calcBlur(YUV* yuv) {
 			else { block_x = MB_SIZE; }
 
 			//printf("block_x: %d, block_y: %d \n", block_x, block_y);
-			/*
+			
 			mbDivider(sobel, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y, m_width);
 			int edge = checkEdge(tempBlock, block_x, block_y);
 			//cout << (float)edge/(block_x*block_y) << "  ";
-			if ((float)edge/(block_x*block_y) > 0.2) {
-				cout << (float)edge / (block_x*block_y) << endl;
-			}
-			else {
-				cout << "edge less than threshold " << endl;
-			}
-			*/
+			//if ((float)edge/(block_x*block_y) > 0.2) {
+			//	cout << (float)edge / (block_x*block_y) << endl;
+			//}
+			//else {
+			//	cout << "edge less than threshold " << endl;
+			//}
+			
 			
 			//blockcpy(imageGray, tempBlock, block_x, block_y, mbIdx_x, mbIdx_y,width);
 			//printf("[(%d,%d),(%d,%d)] ", mbIdx_x, mbIdx_y, block_x, block_y);
 
 			memset(tempBlock, 0, block_x* block_y);
+
 		}
+		
+		
 		//cout << endl;
 	}
+	*/
 
-	ofstream outYUV;
-	outYUV.open("sobel_y2.Y", ios::app|ios::out|ios::binary);
-	outYUV.seekp(0,ios::end);
-	outYUV.write((char*)sobel, m_frameSize);
+	
+	//ofstream outYUV;
+	//outYUV.open("sobel_y2.Y", ios::app|ios::out|ios::binary);
+	//outYUV.seekp(0,ios::end);
+	//outYUV.write((char*)sobel, m_frameSize);
 	//outYUV.write((char*)image, width * height);
 	//outYUV.write((char*)image, width * height);
 
@@ -304,57 +325,91 @@ double KPI::calcBlur(YUV* yuv) {
 	delete image;
 	delete imageGray;
 	delete tempBlock;
+	delete marzilianoWidths;
 
 
 	return contrast;
 }
 
-double KPI::calcColor(unsigned char* rgb) {
-	int x = 0, y = 0;
-	int k = 0;
-
-	double rgVar = 0, ybVar = 0;
-	double rgMean = 0, ybMean = 0;
-	double color = 0;
-	
-	double* rg = new double[m_frameSize];
-	double* yb = new double[m_frameSize];
-	
-	for (y = 0; y < m_height; y++) {
-		for (x = 0, k = 0; x < m_width; x++, k += 3) {
-			rg[y * m_width + x] = rgb[y * m_width * 3 + k] - rgb[y * m_width * 3 + k + 1];
-			yb[y * m_width + x] = 0.5 * (double)(rgb[y * m_width * 3 + k] + rgb[y * m_width * 3 + k + 1])
-				- rgb[y * m_width * 3 + k + 2];
-		}
-	}
-
-	for (y = 0; y < m_height; y++) {
-		for (x = 0, k = 0; x < m_width; x++, k += 3) {
-			rg[y * m_width + x] = rgb[y * m_width * 3 + k] - rgb[y * m_width * 3 + k + 1];
-			yb[y * m_width + x] = 0.5 * (double)(rgb[y * m_width * 3 + k] + rgb[y * m_width * 3 + k + 1])
-				- rgb[y * m_width * 3 + k + 2];
-		}
-	}
-
-	calcStdev2(rg, m_width, m_height, rgVar, rgMean);
-	calcStdev2(yb, m_width, m_height, ybVar, ybMean);
-	
-
-	color = sqrt(rgVar + ybVar) + sqrt(rgMean+ ybMean);
-	//printf("%.4f,  %.4f,  %.4f,  %.4f .\n", rgVar, rgMean, ybVar, ybMean);
-	return color;
-}
-
 int KPI::checkEdge(unsigned char* block, int block_x, int block_y) {
 	int edgeCount = 0;
-	for (int i = 0; i < block_x * block_y; i++) {
-		int ss = static_cast<int>(block[i]);
-		if (ss > 0) {
-			edgeCount++;
+	double localColt = calcStdev(block, block_x, block_y);
+
+	const unsigned char minima = 0;
+	const unsigned char maxima = 0;
+
+	for (int y = 0; y < block_y-1; y++) {
+		for (int x = 0; x < block_x-1; x++) {
+			
+			//maxima = (block[y * block_x + x ] < block[y * block_x + x+1]) ? block[y * block_x + x + 1] : 
+			//printf("%2d ", block[y*block_y + x]);
 		}
+		cout << endl;
 	}
+	cout << endl;
 	return edgeCount;
 }
+
+void KPI::calcEdgeWidth(unsigned char* edge, unsigned char* image, unsigned char* edgeWidth) {
+	//marziliano method
+	int totalNumEdge = 0;
+	double hist_pblur[101];
+
+	double* grad_x = new double[m_frameSize];
+	double* grad_y = new double[m_frameSize];
+
+	//Gradient (x[i-1]-x[+1])/2
+	for (int y = 1; y < m_height; y++) {
+		if (y == 0) {
+			for (int x = 0; x < m_width; x++) {
+				grad_y[y * m_width + x] = (double)(image[(y + 1) * m_width + x] - image[(y)* m_width + x]);
+				if (x == 0) {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x + 1)] - image[y * m_width + (x)]);
+				}
+				else if (x == m_width - 1) {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x)] - image[y * m_width + (x - 1)]);
+				}
+				else {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x + 1)] - image[y * m_width + (x - 1)]) / 2.;
+				}
+			}
+		}
+		else if (y == m_height - 1) {
+			for (int x = 0; x < m_width; x++) {
+				grad_y[y * m_width + x] = (double)(image[(y) * m_width + x] - image[(y-1)* m_width + x]);
+				if (x == 0) {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x + 1)] - image[y * m_width + (x)]);
+				}
+				else if (x == m_width - 1) {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x)] - image[y * m_width + (x - 1)]);
+				}
+				else {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x + 1)] - image[y * m_width + (x - 1)]) / 2.;
+				}
+			}
+		}
+		else {
+			for (int x = 0; x < m_width; x++) {
+				grad_y[y * m_width + x] = (double)(image[(y + 1) * m_width + x] - image[(y - 1)* m_width + x]) / 2.;
+				if (x == 0) {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x + 1)] - image[y * m_width + (x)]);
+				}
+				else if (x == m_width - 1) {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x)] - image[y * m_width + (x - 1)]);
+				}
+				else {
+					grad_x[y * m_width + x] = (double)(image[y * m_width + (x + 1)] - image[y * m_width + (x - 1)]) / 2.;
+				}
+			}
+		}
+	}
+	
+	delete grad_x;
+	delete grad_y;
+	
+}
+
+
 
 double KPI::calcStdev(unsigned char* image, int width, int height) { // using for Spatial information
 	double stdev = 0;
@@ -388,6 +443,42 @@ double KPI::calcStdev2(double* image, int width, int height, double& varOut, dou
 	}
 	varOut = stdev / imageSize;
 	return sqrt(stdev / imageSize);
+}
+
+double KPI::calcColor(unsigned char* rgb) {
+	int x = 0, y = 0;
+	int k = 0;
+
+	double rgVar = 0, ybVar = 0;
+	double rgMean = 0, ybMean = 0;
+	double color = 0;
+
+	double* rg = new double[m_frameSize];
+	double* yb = new double[m_frameSize];
+
+	for (y = 0; y < m_height; y++) {
+		for (x = 0, k = 0; x < m_width; x++, k += 3) {
+			rg[y * m_width + x] = rgb[y * m_width * 3 + k] - rgb[y * m_width * 3 + k + 1];
+			yb[y * m_width + x] = 0.5 * (double)(rgb[y * m_width * 3 + k] + rgb[y * m_width * 3 + k + 1])
+				- rgb[y * m_width * 3 + k + 2];
+		}
+	}
+
+	for (y = 0; y < m_height; y++) {
+		for (x = 0, k = 0; x < m_width; x++, k += 3) {
+			rg[y * m_width + x] = rgb[y * m_width * 3 + k] - rgb[y * m_width * 3 + k + 1];
+			yb[y * m_width + x] = 0.5 * (double)(rgb[y * m_width * 3 + k] + rgb[y * m_width * 3 + k + 1])
+				- rgb[y * m_width * 3 + k + 2];
+		}
+	}
+
+	calcStdev2(rg, m_width, m_height, rgVar, rgMean);
+	calcStdev2(yb, m_width, m_height, ybVar, ybMean);
+
+
+	color = sqrt(rgVar + ybVar) + sqrt(rgMean + ybMean);
+	//printf("%.4f,  %.4f,  %.4f,  %.4f .\n", rgVar, rgMean, ybVar, ybMean);
+	return color;
 }
 
 double KPI::calcSI(YUV* yuv) {
@@ -533,5 +624,19 @@ void KPI::YUV420toRGB(YUV* yuv, unsigned char* rgb, int width, int height)
 	delete Cr_up;
 }
 
+void KPI::saveImage(unsigned char* image,int width, int height, int num) {
+	
+	char outFileName[100] = { 0, };
+	sprintf(outFileName, "C:/Users/user/Source/Repos/KPI/KPI/rgb/RGB_%d.RGB", num);
+	ofstream outYUV;
+	outYUV.open(outFileName, ios::app | ios::out | ios::binary);
+	//outYUV.seekp(0, ios::end);
+	outYUV.write((char*)image, width*height);
+	outYUV.close();
+	
+
+
+	
+}
 
 

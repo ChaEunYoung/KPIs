@@ -5,6 +5,7 @@
 #include <windows.h>
 
 
+
 #define HEADER_SIZE 54
 #define NUM_FRAME 200
 #define MB_SIZE 64
@@ -36,23 +37,33 @@ public:
 	KPI(char* fileName, int width, int height, int num_frame);
 	void setYUVInfo();
 	void deleteYUV();
-	void mbDivider(unsigned char* image, unsigned char* block, int x, int y, int xx, int yy, int);
+	
 	//void blockcpy(unsigned char* image, unsigned char* block, int block_x, int block_y, int mb_x, int mb_y, int);
 	//void saveImage(YUV* yuv);
 	void sobelFilter(unsigned char* block, unsigned char* sobelOut, int block_x, int block_y, int option);
+
+	double calcblur(YUV* yuv);
 	int checkEdge(unsigned char* block, int block_x, int block_y);
+	void calcEdgeWidth(unsigned char* edge, unsigned char* image, unsigned char* edgeWidth);
 	
-	double calcBlur(YUV* yuv);
+
 	double calcColor(unsigned char* rgb);
 	double calcStdev(unsigned char* image, int width, int height);
 	double calcStdev2(double* image, int width, int height, double& valOut, double& meanOut);
 	double calcSI(YUV* yuv);
 	double calcTI(YUV* yuvBefore, YUV* yuvTemp, YUV*diff);
+	void mbDivider(unsigned char* image, unsigned char* block, int x, int y, int xx, int yy, int);
 	void YUV420toRGB(YUV* yuv, unsigned char* rgb, int width, int height);
+	void saveImage(unsigned char* image, int width, int height, int num);
 	YUV** frame;
 	YUV** motionDiff;
+	int count = 0;
 
+
+
+	// member variable
 	unsigned char* RGB;
+	//unsigned char* marzilianoWidths;
 
 
 
@@ -67,5 +78,8 @@ public:
 	int m_height = 0;
 	int m_frameSize = 0;
 	int m_numOfFrame = 0;
+
+
+	
 };
 
