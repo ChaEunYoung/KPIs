@@ -264,7 +264,7 @@ double KPI::calcBlur(YUV* yuv) {
 	memcpy(image, yuv->Y, m_frameSize);
 	//yuv->stdev = calcStdev(image, m_width, m_height);
 	//cout << yuv->stdev << "  ";
-	sobelFilter(image, sobel, m_width, m_height, 2);
+	sobelFilter(image, sobel, m_width, m_height, 1);
 
 	for (int mbIdx_y = 0, yy = 0; mbIdx_y < m_height; mbIdx_y += MB_SIZE, yy++) {
 		if (mbExtra_y != 0 && yy == mbNum_y) { block_y = mbExtra_y; }
