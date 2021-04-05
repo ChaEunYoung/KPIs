@@ -50,7 +50,6 @@ public:
 	double calcblur(YUV* yuv);
 	int isEdgeBlock(unsigned char* block, int block_x, int block_y, double threshold);
 	void calcEdgeWidth(unsigned char* edge, unsigned char* image, int* edgeWidth);
-	void calcSharpness(unsigned char* image, unsigned char* edge, int* edgeWidth);
 	double calcBlockContrast(unsigned char* block, int width, int height);
 	
 

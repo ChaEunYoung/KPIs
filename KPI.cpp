@@ -589,10 +589,6 @@ void KPI::calcEdgeWidth(unsigned char* edge, unsigned char* image, int* edgeWidt
 	
 }
 
-void KPI::calcSharpness(unsigned char* image, unsigned char* edge, int* edgeWidth) {
-	
-}
-
 double KPI::calcStdev(unsigned char* image, int width, int height) { // using for Spatial information
 	double stdev = 0;
 	double mean = 0;
@@ -676,8 +672,6 @@ double KPI::calcSI(YUV* yuv) {
 	//outYUV.write((char*)image, width * height);
 	
 	yuv->sobelStdev = calcStdev(image, m_width, m_height);
-
-
 
 	delete image;
 	double a = 0;
@@ -830,10 +824,6 @@ void KPI::saveImage(unsigned char* image,int width, int height, int num) {
 	//outYUV.seekp(0, ios::end);
 	outYUV.write((char*)image, width*height);
 	outYUV.close();
-	
-
-
-	
 }
 
 
