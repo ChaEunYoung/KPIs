@@ -62,31 +62,24 @@ public:
 	void mbDivider(int* image, int* block, int x, int y, int xx, int yy, int);
 	void YUV420toRGB(YUV* yuv, unsigned char* rgb, int width, int height);
 	void saveImage(unsigned char* image, int width, int height, int num);
-	YUV** frame;
-	YUV** motionDiff;
-	int count = 0;
-
-
+	
 
 	// member variable
 	unsigned char* RGB;
 	//unsigned char* marzilianoWidths;
 
-
-
+	YUV** frame;
+	YUV** motionDiff;
+	int count = 0;
 	double blur = 0;
 	double contrast = 0;
 	double colorfulness = 0;
 	double spatialInformation = 0;
 	double temporalInformation = 0;
 	double vniqe = 0;
-
 	int m_width = 0;
 	int m_height = 0;
 	int m_frameSize = 0;
 	int m_numOfFrame = 0;
-
-
-	
 };
 

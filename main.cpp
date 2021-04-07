@@ -17,7 +17,7 @@ int main()
 	KPI AAA(inputFileName, width, height, num_frame);
 	clock_t end = clock();
 
-	int result = (end - start);
+	long result = (end - start);
 	printf("경과시간 %d ms\n", result);
 	
 	AAA.deleteYUV();

@@ -92,13 +92,19 @@ KPI::KPI(char* fileName, int width, int height, int num_frame)
 		//sumTempCont += tempCont;
 
 		//**Blur**
-		printf("%dth frame done.\n", frameNum);
+		//printf("%dth frame done.\n", frameNum);
 		sumTempBlur += calcblur(frame[frameNum]);
 		
 		//deleteYUV(frame);
 
 		//saveImage(frame[frameNum]->Y, m_width, m_height, frameNum);
 	}
+
+	//for (int frameNum = 0; frameNum < m_numOfFrame; frameNum++) {
+		//printf("%dth frame done.\n", frameNum);
+	//	sumTempBlur += calcblur(frame[frameNum]);
+	//}
+	
 
 
 	contrast = sumTempCont / m_numOfFrame;
@@ -236,7 +242,7 @@ void KPI::sobelFilter(unsigned char* block, unsigned char* sobelOut ,int block_x
 	for (int y = 0; y < mb_y; y++) {
 		for (int x = 0; x < mb_x; x++) {
 			if (sobel[y * mb_x + x] > max) {
-				max = sobel[y * mb_x + x];
+				max = sobel[(y * mb_x) + x];
 			}
 			if (sobel[y * mb_x + x] < min) {
 				min = sobel[y * mb_x + x];
@@ -297,9 +303,9 @@ double KPI::calcblur(YUV* yuv) {
 	//cout << yuv->stdev << "  ";
 	sobelFilter(image, sobel, m_width, m_height, 1);
 	calcEdgeWidth(sobel, image, marzilianoWidths);
-	//calcSharpness(sobel, image, marzilianoWidths);
 	
-
+	
+	
 	
 	for (int mbIdx_y = 0, yy = 0; mbIdx_y < m_height; mbIdx_y += MB_SIZE, yy++) {
 		if (mbExtra_y != 0 && yy == mbNum_y) { block_y = mbExtra_y; }
@@ -333,6 +339,7 @@ double KPI::calcblur(YUV* yuv) {
 
 				while (!SblockWidths.empty()) {
 					prob_blur_detection.push(1 - exp(-pow(abs((double)SblockWidths.top() / (double)jnb), BETA)));
+					//prob_blur_detection.push(0.5);
 					SblockWidths.pop();
 					//printf("%.4f  ", prob_blur_detection.top());
 				}
@@ -351,6 +358,7 @@ double KPI::calcblur(YUV* yuv) {
 		}
 		//cout << endl;
 	}
+	
 
 	delete sobel;
 	delete image;
@@ -363,7 +371,7 @@ double KPI::calcblur(YUV* yuv) {
 			//printf("%.2f  ", hist_pblur2[i]);
 		}
 
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i <64; i++) {
 			hist_sum += hist_pblur2[i];
 		}
 		return hist_sum;
@@ -564,7 +572,7 @@ void KPI::calcEdgeWidth(unsigned char* edge, unsigned char* image, int* edgeWidt
 			}
 		}
 	}
-
+	/*
 	for (int y = 0; y < m_height; y++) {
 		for (int x = 0; x < m_width; x++) {
 			//if (tempEdgeWidth[y * m_width + x] > 100 || tempEdgeWidth[y * m_width + x] < 0) {
@@ -576,8 +584,8 @@ void KPI::calcEdgeWidth(unsigned char* edge, unsigned char* image, int* edgeWidt
 			//}
 		}
 		//cout << endl;
-		
 	}
+	*/
 
 	memcpy(edgeWidth, tempEdgeWidth, sizeof(int) * m_frameSize);
 	
